@@ -1,0 +1,18 @@
+[package]
+name = "gst-opencv-face-counter"
+version = "0.1.0"
+authors = ["Bartosz Błaszków <bbartosz06@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+glib = "0.6"
+gstreamer = "0.12"
+gstreamer-base = "0.12"
+gst-plugin = "0.3"
+
+[lib]
+name = "gstfacecounter"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
