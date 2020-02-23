@@ -12,3 +12,5 @@ gstreamer = "0.12"
 gstreamer-audio = "0.12"
 gstreamer-video = "0.12"
 gstreamer-app = "0.12"
+
+opencv = "0.29"

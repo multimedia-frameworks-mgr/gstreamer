@@ -1,15 +1,68 @@
 extern crate gstreamer as gst;
 use gst::prelude::*;
+use opencv::{core::*, imgproc, objdetect, prelude::*, types};
+use std::ffi::c_void;
+use std::mem;
+
+const XML: &str = "/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml";
+const WIDTH: i32 = 320;
+const HEIGHT: i32 = 240;
 
 fn main() {
     gst::init().unwrap();
     let pipeline = gst::parse_launch(
-        "v4l2src device=/dev/video0 ! videoconvert name=src ! video/x-raw,format=I420 ! autovideosink",
+        &format!("v4l2src device=/dev/video0 ! videoscale ! videoconvert name=src ! video/x-raw,format=I420,width={width},height={height} ! autovideosink", width = WIDTH, height = HEIGHT),
     )
     .unwrap();
     let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
     let src = pipeline.get_by_name("src").unwrap();
     let src_pad = src.get_static_pad("src").unwrap();
+
+    src_pad.add_probe(gst::PadProbeType::BUFFER, |_, probe_info| {
+        if let Some(gst::PadProbeData::Buffer(ref buffer)) = probe_info.data {
+            // OpenCV init
+            let mut face = objdetect::CascadeClassifier::new(&XML).unwrap();
+            // At this point, buffer is only a reference to an existing memory region somewhere.
+            // When we want to access its content, we have to map it while requesting the required
+            // mode of access (read, read/write).
+            // This type of abstraction is necessary, because the buffer in question might not be
+            // on the machine's main memory itself, but rather in the GPU's memory.
+            // So mapping the buffer makes the underlying memory region accessible to us.
+            // See: https://gstreamer.freedesktop.org/documentation/plugin-development/advanced/allocation.html
+            let map = buffer.map_readable().unwrap();
+            let data = map.as_ptr() as *const c_void;
+            let gray_frame = Mat::new_rows_cols_with_data(
+                240,
+                320,
+                CV_8UC1,
+                unsafe { mem::transmute(data) },
+                Mat_AUTO_STEP,
+            )
+            .unwrap();
+            let mut faces = types::VectorOfRect::new();
+
+            face.detect_multi_scale(
+                &gray_frame,
+                &mut faces,
+                1.1,
+                2,
+                objdetect::CASCADE_SCALE_IMAGE,
+                Size {
+                    width: 20,
+                    height: 20,
+                },
+                Size {
+                    width: 0,
+                    height: 0,
+                },
+            )
+            .unwrap();
+
+            println!("Faces: {}", faces.len());
+        }
+
+        gst::PadProbeReturn::Ok
+    });
 
     let ret = pipeline.set_state(gst::State::Playing);
     assert_ne!(ret, gst::StateChangeReturn::Failure);
