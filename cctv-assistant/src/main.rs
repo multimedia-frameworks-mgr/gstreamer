@@ -3,6 +3,7 @@ use gst::prelude::*;
 use opencv::{core::*, imgproc, objdetect, prelude::*, types};
 use std::ffi::c_void;
 use std::mem;
+use std::sync::Mutex;
 
 const XML: &str = "/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml";
 const WIDTH: i32 = 320;
@@ -18,10 +19,10 @@ fn main() {
     let src = pipeline.get_by_name("src").unwrap();
     let src_pad = src.get_static_pad("src").unwrap();
 
-    src_pad.add_probe(gst::PadProbeType::BUFFER, |_, probe_info| {
+    let face = Mutex::new(objdetect::CascadeClassifier::new(&XML).unwrap());
+    src_pad.add_probe(gst::PadProbeType::BUFFER, move |_, probe_info| {
         if let Some(gst::PadProbeData::Buffer(ref buffer)) = probe_info.data {
             // OpenCV init
-            let mut face = objdetect::CascadeClassifier::new(&XML).unwrap();
             // At this point, buffer is only a reference to an existing memory region somewhere.
             // When we want to access its content, we have to map it while requesting the required
             // mode of access (read, read/write).
@@ -32,8 +33,8 @@ fn main() {
             let map = buffer.map_readable().unwrap();
             let data = map.as_ptr() as *const c_void;
             let gray_frame = Mat::new_rows_cols_with_data(
-                240,
-                320,
+                HEIGHT,
+                WIDTH,
                 CV_8UC1,
                 unsafe { mem::transmute(data) },
                 Mat_AUTO_STEP,
@@ -41,22 +42,24 @@ fn main() {
             .unwrap();
             let mut faces = types::VectorOfRect::new();
 
-            face.detect_multi_scale(
-                &gray_frame,
-                &mut faces,
-                1.1,
-                2,
-                objdetect::CASCADE_SCALE_IMAGE,
-                Size {
-                    width: 20,
-                    height: 20,
-                },
-                Size {
-                    width: 0,
-                    height: 0,
-                },
-            )
-            .unwrap();
+            face.lock()
+                .unwrap()
+                .detect_multi_scale(
+                    &gray_frame,
+                    &mut faces,
+                    1.1,
+                    2,
+                    0,
+                    Size {
+                        width: 20,
+                        height: 20,
+                    },
+                    Size {
+                        width: 0,
+                        height: 0,
+                    },
+                )
+                .unwrap();
 
             println!("Faces: {}", faces.len());
         }
