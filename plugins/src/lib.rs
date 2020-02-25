@@ -15,11 +15,11 @@ mod gst_base {
     pub use super::base::*;
 }
 
-mod face_counter;
+mod face_selector;
 // Plugin entry point that should register all elements provided by this plugin,
 // and everything else that this plugin might provide (e.g. typefinders or device providers).
 fn plugin_init(plugin: &gst::Plugin) -> Result<(), glib::BoolError> {
-    face_counter::register(plugin)
+    face_selector::register(plugin)
 }
 
 // Static plugin metdata that is directly stored in the plugin shared object and read by GStreamer
