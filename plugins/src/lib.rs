@@ -11,6 +11,7 @@ extern crate gobject_sys;
 extern crate gstreamer_sys as gst_sys;
 #[allow(dead_code)]
 mod base;
+mod face_counter;
 mod gst_base {
     pub use super::base::*;
 }

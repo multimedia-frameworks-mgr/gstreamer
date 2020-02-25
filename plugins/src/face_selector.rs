@@ -12,12 +12,16 @@ use gst_base::subclass::prelude::*;
 use gst_video;
 
 use std::i32;
-//use std::sync::Mutex;
+use std::time::Instant;
+
+use super::face_counter::*;
 
 const IMAGE_WIDTH: i32 = 320;
 const IMAGE_HEIGHT: i32 = 240;
 
-struct FaceSelector {}
+struct FaceSelector {
+    detector: FaceCounter,
+}
 
 impl FaceSelector {}
 
@@ -42,7 +46,26 @@ impl AggregatorImpl for FaceSelector {
             true
         });
 
-        if let Some(buffer) = buffers.first() {
+        if buffers.len() == 1 {
+            let buffer = buffers.first().unwrap().copy();
+            return aggregator.finish_buffer(buffer);
+        }
+
+        let start = Instant::now();
+        let dims = ImageDims {
+            width: IMAGE_WIDTH,
+            height: IMAGE_HEIGHT,
+        };
+        let most_faces_buffer: Option<(usize, gst::Buffer)> = buffers
+            .into_iter()
+            .enumerate()
+            .max_by_key(|(_i, buffer)| self.detector.detect_faces(buffer.clone(), dims));
+
+        println!("Elapsed: {} microseconds", start.elapsed().as_micros());
+        if let Some((_i, buffer)) = most_faces_buffer {
+            let pts = buffer.get_pts();
+            let dts = buffer.get_dts();
+            println!("Choosen buffer: pts {}, dts {}", pts, dts);
             aggregator.finish_buffer(buffer.copy())
         } else {
             Err(gst_base::AGGREGATOR_FLOW_NEED_DATA)
@@ -59,7 +82,9 @@ impl ObjectSubclass for FaceSelector {
     glib_object_subclass!();
 
     fn new() -> Self {
-        Self {}
+        Self {
+            detector: FaceCounter::new(),
+        }
     }
 
     fn class_init(klass: &mut subclass::simple::ClassStruct<Self>) {
@@ -74,6 +99,7 @@ impl ObjectSubclass for FaceSelector {
             .field("format", &gst_video::VideoFormat::I420.to_str())
             .field("width", &IMAGE_WIDTH)
             .field("height", &IMAGE_HEIGHT)
+            .field("framerate", &gst::Fraction::new(30, 1))
             .build();
 
         let sink_pad_tmpl = gst::PadTemplate::new_with_gtype(

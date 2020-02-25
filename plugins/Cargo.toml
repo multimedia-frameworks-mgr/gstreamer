@@ -18,6 +18,8 @@ gstreamer-sys = "0.8"
 gstreamer-base = "0.15"
 gstreamer-video = "0.15"
 
+opencv = "0.29"
+
 [lib]
 name = "gstfacecounter"
 crate-type = ["cdylib"]
