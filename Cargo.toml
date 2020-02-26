@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+  "cctv-assistant",
+  "plugins",
+]
+
+[profile.release]
+lto = true
+opt-level = 3
+
