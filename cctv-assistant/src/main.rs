@@ -4,6 +4,6 @@ mod pipelines {
 }
 
 fn main() {
-    pipelines::rs_face_selector::run()
-    // pipelines::opencvFaceDetect::run()
+    // pipelines::rs_face_selector::run()
+    pipelines::opencv_face_detect::run()
 }
