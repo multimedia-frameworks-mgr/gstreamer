@@ -7,8 +7,8 @@ const HEIGHT: i32 = 240;
 pub fn run() {
     gst::init().unwrap();
     let pipeline = gst::parse_launch(&format!(
-        "rsFaceSelector name=selector ! autovideosink sync=false
-        v4l2src do-timestamp=true device=/dev/video0
+        "rsFaceSelector name=selector ! autovideosink
+        v4l2src device=/dev/video0
             ! videoconvert 
             ! queue name=src 
             ! video/x-raw,format=I420,width={width},height={height},framerate=30/1

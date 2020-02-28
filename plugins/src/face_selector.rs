@@ -12,6 +12,7 @@ use gst_base::subclass::prelude::*;
 use gst_video;
 
 use std::i32;
+use std::sync::Mutex;
 use std::time::Instant;
 
 use super::face_counter::*;
@@ -21,6 +22,7 @@ const IMAGE_HEIGHT: i32 = 240;
 
 struct FaceSelector {
     detector: FaceCounter,
+    last_selected_pad: Mutex<String>,
 }
 
 impl FaceSelector {}
@@ -41,14 +43,22 @@ impl AggregatorImpl for FaceSelector {
         aggregator.foreach_sink_pad(|_elem, pad| {
             let agg_pad = pad.clone().downcast::<gst_base::AggregatorPad>().unwrap();
             if let Some(buffer) = agg_pad.pop_buffer() {
-                buffers.push(buffer);
+                buffers.push((buffer, agg_pad.get_name()));
             }
             true
         });
 
         if buffers.len() == 1 {
-            let buffer = buffers.first().unwrap().copy();
-            return aggregator.finish_buffer(buffer);
+            let (buffer, pad_name) = buffers.first().unwrap();
+            let mut buffer = buffer.copy();
+            let mut last_selected_pad = self.last_selected_pad.lock().unwrap();
+
+            if *last_selected_pad != pad_name.to_string() {
+                buffer.make_mut().set_flags(gst::BufferFlags::DISCONT);
+                *last_selected_pad = pad_name.to_string();
+            }
+
+            return aggregator.finish_buffer(buffer.to_owned());
         }
 
         let start = Instant::now();
@@ -56,16 +66,20 @@ impl AggregatorImpl for FaceSelector {
             width: IMAGE_WIDTH,
             height: IMAGE_HEIGHT,
         };
-        let most_faces_buffer: Option<(usize, gst::Buffer)> = buffers
+        let most_faces_buffer: Option<(gst::Buffer, glib::GString)> = buffers
             .into_iter()
-            .enumerate()
-            .max_by_key(|(_i, buffer)| self.detector.detect_faces(buffer.clone(), dims));
+            .max_by_key(|(buffer, _pad_name)| self.detector.detect_faces(buffer.copy(), dims));
 
         println!("Elapsed: {} microseconds", start.elapsed().as_micros());
-        if let Some((_i, buffer)) = most_faces_buffer {
-            let pts = buffer.get_pts();
-            let dts = buffer.get_dts();
-            println!("Choosen buffer: pts {}, dts {}", pts, dts);
+        if let Some((buffer, pad_name)) = most_faces_buffer {
+            let mut last_selected_pad = self.last_selected_pad.lock().unwrap();
+            let mut buffer = buffer.copy();
+
+            if *last_selected_pad != pad_name.to_string() {
+                buffer.make_mut().set_flags(gst::BufferFlags::DISCONT);
+                *last_selected_pad = pad_name.to_string();
+            }
+
             aggregator.finish_buffer(buffer.copy())
         } else {
             Err(gst_base::AGGREGATOR_FLOW_NEED_DATA)
@@ -84,6 +98,7 @@ impl ObjectSubclass for FaceSelector {
     fn new() -> Self {
         Self {
             detector: FaceCounter::new(),
+            last_selected_pad: Mutex::new(String::from("sink_0")),
         }
     }
 
