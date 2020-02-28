@@ -4,6 +4,10 @@ mod pipelines {
 }
 
 fn main() {
-    // pipelines::rs_face_selector::run()
-    pipelines::opencv_face_detect::run()
+    let args: Vec<String> = std::env::args().collect();
+    match args.get(1).map(|s| s.as_ref()) {
+        Some("rs") =>  pipelines::rs_face_selector::run(),
+        Some("opencv") => pipelines::opencv_face_detect::run(),
+        _ => pipelines::rs_face_selector::run(),
+    }
 }
