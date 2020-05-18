@@ -66,7 +66,7 @@ pub fn run() {
 
     gst::init().unwrap();
     let pipeline = gst::parse_launch(&format!(
-        "input-selector name=selector sync-streams=true sync-mode=1 ! videoconvert ! queue ! autovideosink sync=false
+        "input-selector name=selector sync-streams=true sync-mode=1 ! videoconvert ! queue name=out_queue ! autovideosink sync=false
         videotestsrc is-live=1
             ! video/x-raw,width={width},height={height},framerate=30/1
             ! facedetect updates=1 profile=/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml

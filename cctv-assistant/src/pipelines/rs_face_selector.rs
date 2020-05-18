@@ -1,13 +1,16 @@
 extern crate gstreamer as gst;
 use gst::prelude::*;
 
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+
 const WIDTH: i32 = 320;
 const HEIGHT: i32 = 240;
 
 pub fn run() {
     gst::init().unwrap();
     let pipeline = gst::parse_launch(&format!(
-        "rsFaceSelector name=selector ! autovideosink
+        "rsFaceSelector name=selector ! autovideosink name=output sync=false
         v4l2src device=/dev/video0
             ! videoconvert 
             ! queue name=src 
@@ -18,10 +21,23 @@ pub fn run() {
         height = HEIGHT
     ))
     .unwrap();
-    // let pipeline = pipeline.dynamic_cast::<gst::pipeline>().unwrap();
-    // let src = pipeline.get_by_name("src").unwrap();
+    let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
+    let output = pipeline.get_by_name("output").unwrap();
     // let selector = pipeline.get_by_name("selector").unwrap();
-    // let src_pad = src.get_static_pad("src").unwrap();
+    let output_pad = output.get_static_pad("sink").unwrap();
+
+    let start: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
+    let probe = move |_: &gst::Pad, _probe_info: &mut gst::PadProbeInfo| {
+        let mut ref_time = start.lock().unwrap();
+        if let Some(time) = *ref_time {
+            println!("{}", time.elapsed().as_micros());
+        }
+        *ref_time = Some(Instant::now());
+
+        gst::PadProbeReturn::Ok
+    };
+
+    output_pad.add_probe(gst::PadProbeType::BUFFER, probe);
 
     pipeline.set_state(gst::State::Playing).unwrap();
 

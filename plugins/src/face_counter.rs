@@ -35,22 +35,22 @@ impl FaceCounter {
         // See: https://gstreamer.freedesktop.org/documentation/plugin-development/advanced/allocation.html
         let map = buffer.into_mapped_buffer_readable().unwrap();
         let data = map.as_ptr() as *const c_void;
-        let gray_frame = Mat::new_rows_cols_with_data(
-            dims.height,
-            dims.width,
-            CV_8UC1,
-            unsafe { mem::transmute(data) },
-            Mat_AUTO_STEP,
-        )
-        .unwrap()
-        .get_umat(
-            AccessFlag::ACCESS_READ,
-            UMatUsageFlags::USAGE_ALLOCATE_DEVICE_MEMORY,
-        )
-        .unwrap();
         let mut faces = types::VectorOfRect::new();
-
         unsafe {
+            let gray_frame = Mat::new_rows_cols_with_data(
+                dims.height,
+                dims.width,
+                CV_8UC1,
+                mem::transmute(data),
+                Mat_AUTO_STEP,
+            )
+            .unwrap()
+            .get_umat(
+                AccessFlag::ACCESS_READ,
+                UMatUsageFlags::USAGE_ALLOCATE_DEVICE_MEMORY,
+            )
+            .unwrap();
+
             let mut norm_gray_frame = UMat::new_rows_cols(
                 dims.height,
                 dims.width,
