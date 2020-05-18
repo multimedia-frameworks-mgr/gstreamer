@@ -27,6 +27,11 @@ pub fn run() {
 
     // Wait until error or EOS
     let bus = pipeline.get_bus().unwrap();
+    let bin = pipeline.dynamic_cast::<gst::Bin>().unwrap();
+    println!(
+        "{}",
+        bin.debug_to_dot_data(gstreamer::DebugGraphDetails::all())
+    );
     while let Some(msg) = bus.timed_pop(gst::CLOCK_TIME_NONE) {
         use gst::MessageView;
 
@@ -46,5 +51,5 @@ pub fn run() {
     }
 
     // Shutdown pipeline
-    pipeline.set_state(gst::State::Null).unwrap();
+    bin.set_state(gst::State::Null).unwrap();
 }
