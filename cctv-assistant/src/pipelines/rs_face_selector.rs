@@ -4,7 +4,7 @@ use gst::prelude::*;
 const WIDTH: i32 = 320;
 const HEIGHT: i32 = 240;
 
-pub fn run() {
+pub fn run(streams_num: i32) {
     gst::init().unwrap();
     let pipeline = gst::parse_launch(&format!(
         "rsFaceSelector name=selector ! autovideosink

@@ -60,32 +60,43 @@ impl SelectorController {
     }
 }
 
-pub fn run() {
+pub fn run(streams_num: i32) {
     const WIDTH: i32 = 320;
     const HEIGHT: i32 = 240;
 
     gst::init().unwrap();
-    let pipeline = gst::parse_launch(&format!(
-        "input-selector name=selector sync-streams=true sync-mode=1 ! videoconvert ! queue ! autovideosink sync=false
-        videotestsrc is-live=1
+    let mut pipe_string = format!(
+        "input-selector name=selector sync-streams=true sync-mode=1 ! videoconvert ! queue  name=out ! autovideosink sync=false
+        "
+    );
+
+    for _i in 0..streams_num {
+        pipe_string.push_str(&format!(
+            "videotestsrc is-live=1
             ! video/x-raw,width={width},height={height},framerate=30/1
             ! facedetect updates=1 profile=/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml
             ! queue leaky=2
-            ! selector.sink_0
-        v4l2src device=/dev/video0
-            ! videoconvert 
-            ! queue name=src 
-            ! video/x-raw,width={width},height={height},framerate=30/1
-            ! facedetect updates=1 profile=/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml
-            ! queue leaky=2
-            ! selector.sink_1
+            ! selector.
             ",
         width = WIDTH,
         height = HEIGHT
-    ))
-    .unwrap();
+        ));
+    }
+
+    //println!("{}", pipe_string);
+        
+    let pipeline = gst::parse_launch(&pipe_string).unwrap();
     let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
     // let src = pipeline.get_by_name("src").unwrap();
+
+    let time = Instant::now();
+    let out = pipeline.get_by_name("out").unwrap();
+    let sink_pad = out.get_static_pad("sink").unwrap();
+    sink_pad.add_probe(gst::PadProbeType::BUFFER, move |_, _probe_info| {
+        println!("{:?}", time.elapsed());
+        gst::PadProbeReturn::Ok
+    });
+
     let selector = pipeline.get_by_name("selector").unwrap();
     let first_active_pad = selector.get_static_pad("sink_0").unwrap();
 
