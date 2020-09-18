@@ -61,8 +61,9 @@ impl SelectorController {
 }
 
 pub fn run(streams_num: i32) {
-    const WIDTH: i32 = 320;
-    const HEIGHT: i32 = 240;
+    const WIDTH: i32 = 270;
+    const HEIGHT: i32 = 180;
+    const FPS: i32 = 25;
 
     gst::init().unwrap();
     let mut pipe_string = format!(
@@ -70,16 +71,23 @@ pub fn run(streams_num: i32) {
         "
     );
 
-    for _i in 0..streams_num {
+    for i in 0..streams_num {
         pipe_string.push_str(&format!(
-            "videotestsrc is-live=1
-            ! video/x-raw,width={width},height={height},framerate=30/1
-            ! facedetect updates=1 profile=/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml
+            "pushfilesrc location=face{index}.h264
+            ! video/x-h264,width={width},height={height},framerate={fps}/1,stream-format=byte-stream
+            ! h264parse
+            ! avdec_h264
+            ! videoconvert
+            ! identity sync=true
+            ! video/x-raw,width={width},height={height},framerate={fps}/1
+            ! facedetect display=1 updates=1 
             ! queue leaky=2
             ! selector.
             ",
+        index = i,
         width = WIDTH,
-        height = HEIGHT
+        height = HEIGHT,
+        fps = FPS
         ));
     }
 
@@ -93,7 +101,7 @@ pub fn run(streams_num: i32) {
     let out = pipeline.get_by_name("out").unwrap();
     let sink_pad = out.get_static_pad("sink").unwrap();
     sink_pad.add_probe(gst::PadProbeType::BUFFER, move |_, _probe_info| {
-        println!("{:?}", time.elapsed());
+        println!("{:?}", time.elapsed().as_micros());
         gst::PadProbeReturn::Ok
     });
 

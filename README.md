@@ -13,8 +13,25 @@ Processing pipeline implemented in GStreamer
 * gst-plugins-opencv
 
 ## Running
+
+### Preps
+```bash
+brew install rustup
+rustup toolchain install stable
+cargo build --release
+```
+
+Additionally, pipelines expect file `faceX.h264` where X is number of input starting from 0
+
+### Running GstAggregate-base plugin version
 ```bash
 cargo build --release
 export GST_PLUGIN_PATH="`pwd`/target/release"
-./target/release/cctv-assistant
+./target/release/cctv-assistant rs <number of inputs>
+```
+
+### Running opencv-plugin version
+```bash
+cargo build --release
+./target/release/cctv-assistant opencv <number_of_inputs>
 ```

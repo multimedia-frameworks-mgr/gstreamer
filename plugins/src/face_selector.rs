@@ -17,8 +17,8 @@ use std::time::Instant;
 
 use super::face_counter::*;
 
-const IMAGE_WIDTH: i32 = 320;
-const IMAGE_HEIGHT: i32 = 240;
+const IMAGE_WIDTH: i32 = 1080;
+const IMAGE_HEIGHT: i32 = 720;
 
 struct FaceSelector {
     detector: FaceCounter,
@@ -114,7 +114,6 @@ impl ObjectSubclass for FaceSelector {
             .field("format", &gst_video::VideoFormat::I420.to_str())
             .field("width", &IMAGE_WIDTH)
             .field("height", &IMAGE_HEIGHT)
-            .field("framerate", &gst::Fraction::new(30, 1))
             .build();
 
         let sink_pad_tmpl = gst::PadTemplate::new_with_gtype(

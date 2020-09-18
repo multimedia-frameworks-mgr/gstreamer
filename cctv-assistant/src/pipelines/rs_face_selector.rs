@@ -1,23 +1,34 @@
 extern crate gstreamer as gst;
 use gst::prelude::*;
 
-const WIDTH: i32 = 320;
-const HEIGHT: i32 = 240;
+const WIDTH: i32 = 1080;
+const HEIGHT: i32 = 720;
+const FPS: i32 = 25;
 
 pub fn run(streams_num: i32) {
     gst::init().unwrap();
-    let pipeline = gst::parse_launch(&format!(
-        "rsFaceSelector name=selector ! autovideosink
-        v4l2src device=/dev/video0
-            ! videoconvert 
-            ! queue name=src 
-            ! video/x-raw,format=I420,width={width},height={height},framerate=30/1
-            ! selector.sink_0
-        videotestsrc is-live=1 ! queue ! video/x-raw,format=I420,width={width},height={height},framerate=30/1 ! selector.sink_1",
-        width = WIDTH,
-        height = HEIGHT
-    ))
-    .unwrap();
+
+    let mut pipe_string = format!("rsFaceSelector name=selector ! autovideosink");
+    for i in 0..streams_num {
+        pipe_string.push_str(&format!(
+            "
+            pushfilesrc location=face{index}.h264
+            ! video/x-h264,width={width},height={height},framerate={fps}/1,stream-format=byte-stream
+            ! h264parse
+            ! avdec_h264
+            ! videoconvert
+            ! video/x-raw,format=I420,width={width},height={height},framerate={fps}/1
+            ! identity sync=true
+            ! queue leaky=2
+            ! selector.
+            ",
+            index = i,
+            width = WIDTH,
+            height = HEIGHT,
+            fps = FPS
+        ));
+    }
+    let pipeline = gst::parse_launch(&pipe_string).unwrap();
     // let pipeline = pipeline.dynamic_cast::<gst::pipeline>().unwrap();
     // let src = pipeline.get_by_name("src").unwrap();
     // let selector = pipeline.get_by_name("selector").unwrap();
