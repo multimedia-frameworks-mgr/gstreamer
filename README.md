@@ -22,6 +22,10 @@ cargo build --release
 ```
 
 Additionally, pipelines expect file `faceX.h264` where X is number of input starting from 0
+Parameters of video are hardcoded in pipelines and plugin:
+- cctv-assistant/src/pipelines/opencv_face_detect.rs
+- cctv-assistant/src/pipelines/rs_face_selector.rs
+- plugins/src/face_selector.rs
 
 ### Running GstAggregate-base plugin version
 ```bash
