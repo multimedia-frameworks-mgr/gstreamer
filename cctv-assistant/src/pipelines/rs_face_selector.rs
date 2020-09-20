@@ -1,6 +1,8 @@
 extern crate gstreamer as gst;
 use gst::prelude::*;
 
+use std::time::{Duration, Instant};
+
 const WIDTH: i32 = 1080;
 const HEIGHT: i32 = 720;
 const FPS: i32 = 25;
@@ -8,7 +10,7 @@ const FPS: i32 = 25;
 pub fn run(streams_num: i32) {
     gst::init().unwrap();
 
-    let mut pipe_string = format!("rsFaceSelector name=selector ! autovideosink");
+    let mut pipe_string = format!("rsFaceSelector name=selector ! queue  name=out ! autovideosink");
     for i in 0..streams_num {
         pipe_string.push_str(&format!(
             "
@@ -29,10 +31,14 @@ pub fn run(streams_num: i32) {
         ));
     }
     let pipeline = gst::parse_launch(&pipe_string).unwrap();
-    // let pipeline = pipeline.dynamic_cast::<gst::pipeline>().unwrap();
-    // let src = pipeline.get_by_name("src").unwrap();
-    // let selector = pipeline.get_by_name("selector").unwrap();
-    // let src_pad = src.get_static_pad("src").unwrap();
+    let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
+    let time = Instant::now();
+    let out = pipeline.get_by_name("out").unwrap();
+    let sink_pad = out.get_static_pad("sink").unwrap();
+    sink_pad.add_probe(gst::PadProbeType::BUFFER, move |_, _probe_info| {
+        println!("{:?}", time.elapsed().as_micros());
+        gst::PadProbeReturn::Ok
+    });
 
     pipeline.set_state(gst::State::Playing).unwrap();
 

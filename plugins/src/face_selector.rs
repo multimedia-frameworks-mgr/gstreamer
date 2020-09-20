@@ -13,7 +13,7 @@ use gst_video;
 
 use std::i32;
 use std::sync::Mutex;
-use std::time::Instant;
+// use std::time::Instant;
 
 use super::face_counter::*;
 
@@ -61,7 +61,7 @@ impl AggregatorImpl for FaceSelector {
             return aggregator.finish_buffer(buffer.to_owned());
         }
 
-        let start = Instant::now();
+        // let start = Instant::now();
         let dims = ImageDims {
             width: IMAGE_WIDTH,
             height: IMAGE_HEIGHT,
@@ -70,7 +70,7 @@ impl AggregatorImpl for FaceSelector {
             .into_iter()
             .max_by_key(|(buffer, _pad_name)| self.detector.detect_faces(buffer.copy(), dims));
 
-        println!("Elapsed: {} microseconds", start.elapsed().as_micros());
+        // println!("Elapsed: {} microseconds", start.elapsed().as_micros());
         if let Some((buffer, pad_name)) = most_faces_buffer {
             let mut last_selected_pad = self.last_selected_pad.lock().unwrap();
             let mut buffer = buffer.copy();
