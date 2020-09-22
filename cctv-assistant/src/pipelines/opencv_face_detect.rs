@@ -64,6 +64,7 @@ pub fn run(streams_num: i32) {
     const WIDTH: i32 = 270;
     const HEIGHT: i32 = 180;
     const FPS: i32 = 25;
+    const XML: &str = "haarcascade_frontalface_alt.xml";
 
     gst::init().unwrap();
     let mut pipe_string = format!(
@@ -80,19 +81,19 @@ pub fn run(streams_num: i32) {
             ! videoconvert
             ! identity sync=true
             ! video/x-raw,width={width},height={height},framerate={fps}/1
-            ! facedetect display=1 updates=1 
+            ! facedetect min-neighbors=2 scale-factor=1.1 updates=1 profile={xml}
             ! queue leaky=2
             ! selector.
             ",
-        index = i,
-        width = WIDTH,
-        height = HEIGHT,
-        fps = FPS
+            index = i,
+            width = WIDTH,
+            height = HEIGHT,
+            fps = FPS,
+            xml = XML
         ));
     }
 
     //println!("{}", pipe_string);
-        
     let pipeline = gst::parse_launch(&pipe_string).unwrap();
     let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
     // let src = pipeline.get_by_name("src").unwrap();
@@ -101,7 +102,7 @@ pub fn run(streams_num: i32) {
     let out = pipeline.get_by_name("out").unwrap();
     let sink_pad = out.get_static_pad("sink").unwrap();
     sink_pad.add_probe(gst::PadProbeType::BUFFER, move |_, _probe_info| {
-        println!("{:?}", time.elapsed().as_micros());
+        println!("{:?}", time.elapsed().as_millis());
         gst::PadProbeReturn::Ok
     });
 

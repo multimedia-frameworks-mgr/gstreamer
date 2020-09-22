@@ -39,3 +39,9 @@ export GST_PLUGIN_PATH="`pwd`/target/release"
 cargo build --release
 ./target/release/cctv-assistant opencv <number_of_inputs>
 ```
+
+## Measurements
+
+```bash
+sar -P ALL 5 20 >measurements/proc_rs_2.txt & ; ./target/release/cctv-assistant | tee measurements/times_rs_2.txt && pkill -SIGINT sar
+```

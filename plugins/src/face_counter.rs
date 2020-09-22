@@ -10,7 +10,7 @@ pub struct ImageDims {
     pub height: i32,
 }
 
-const XML: &str = "/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml";
+const XML: &str = "haarcascade_frontalface_alt.xml";
 
 pub struct FaceCounter {
     classifier: Mutex<objdetect::CascadeClassifier>,
@@ -66,16 +66,16 @@ impl FaceCounter {
                 .detect_multi_scale(
                     &norm_gray_frame,
                     &mut faces,
-                    1.2,
-                    3,
+                    1.1,
+                    2,
                     objdetect::CASCADE_SCALE_IMAGE,
                     Size {
                         width: 30,
                         height: 30,
                     },
                     Size {
-                        width: 0,
-                        height: 0,
+                        width: 60,
+                        height: 60,
                     },
                 )
                 .unwrap();

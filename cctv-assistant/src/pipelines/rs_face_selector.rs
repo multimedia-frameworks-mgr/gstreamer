@@ -1,10 +1,10 @@
 extern crate gstreamer as gst;
 use gst::prelude::*;
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-const WIDTH: i32 = 1080;
-const HEIGHT: i32 = 720;
+const WIDTH: i32 = 270;
+const HEIGHT: i32 = 180;
 const FPS: i32 = 25;
 
 pub fn run(streams_num: i32) {
@@ -36,7 +36,7 @@ pub fn run(streams_num: i32) {
     let out = pipeline.get_by_name("out").unwrap();
     let sink_pad = out.get_static_pad("sink").unwrap();
     sink_pad.add_probe(gst::PadProbeType::BUFFER, move |_, _probe_info| {
-        println!("{:?}", time.elapsed().as_micros());
+        println!("{:?}", time.elapsed().as_millis());
         gst::PadProbeReturn::Ok
     });
 

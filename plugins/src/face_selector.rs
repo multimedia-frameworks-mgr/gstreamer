@@ -17,8 +17,8 @@ use std::sync::Mutex;
 
 use super::face_counter::*;
 
-const IMAGE_WIDTH: i32 = 1080;
-const IMAGE_HEIGHT: i32 = 720;
+const IMAGE_WIDTH: i32 = 270;
+const IMAGE_HEIGHT: i32 = 180;
 
 struct FaceSelector {
     detector: FaceCounter,
