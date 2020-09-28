@@ -34,7 +34,7 @@ impl SelectorController {
     }
 
     fn pad_to_activate(&mut self) -> Option<gst::Pad> {
-        println!("{:?}", self.faces_per_pad);
+        // println!("{:?}", self.faces_per_pad);
         if self.last_change.elapsed() < Duration::from_millis(200) {
             return None;
         }
@@ -61,8 +61,8 @@ impl SelectorController {
 }
 
 pub fn run(streams_num: i32) {
-    const WIDTH: i32 = 270;
-    const HEIGHT: i32 = 180;
+    const WIDTH: i32 = 360;
+    const HEIGHT: i32 = 240;
     const FPS: i32 = 25;
     const XML: &str = "haarcascade_frontalface_alt.xml";
 
@@ -81,7 +81,7 @@ pub fn run(streams_num: i32) {
             ! videoconvert
             ! identity sync=true
             ! video/x-raw,width={width},height={height},framerate={fps}/1
-            ! facedetect min-neighbors=2 scale-factor=1.1 updates=1 profile={xml}
+            ! facedetect min-neighbors=2 scale-factor=1.1 updates=1 display=0 profile={xml}
             ! queue leaky=2
             ! selector.
             ",

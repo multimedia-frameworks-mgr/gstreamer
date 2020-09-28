@@ -3,8 +3,8 @@ use gst::prelude::*;
 
 use std::time::Instant;
 
-const WIDTH: i32 = 270;
-const HEIGHT: i32 = 180;
+const WIDTH: i32 = 360;
+const HEIGHT: i32 = 240;
 const FPS: i32 = 25;
 
 pub fn run(streams_num: i32) {

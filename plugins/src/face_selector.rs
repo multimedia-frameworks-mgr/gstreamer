@@ -17,8 +17,8 @@ use std::sync::Mutex;
 
 use super::face_counter::*;
 
-const IMAGE_WIDTH: i32 = 270;
-const IMAGE_HEIGHT: i32 = 180;
+const IMAGE_WIDTH: i32 = 360;
+const IMAGE_HEIGHT: i32 = 240;
 
 struct FaceSelector {
     detector: FaceCounter,
@@ -40,14 +40,21 @@ impl AggregatorImpl for FaceSelector {
         _timeout: bool,
     ) -> Result<gst::FlowSuccess, gst::FlowError> {
         let mut buffers = Vec::new();
+        let mut eos = false;
         aggregator.foreach_sink_pad(|_elem, pad| {
             let agg_pad = pad.clone().downcast::<gst_base::AggregatorPad>().unwrap();
+            if agg_pad.is_eos() {
+                eos = true;
+            }
             if let Some(buffer) = agg_pad.pop_buffer() {
                 buffers.push((buffer, agg_pad.get_name()));
             }
             true
         });
 
+        if eos {
+            return Err(gstreamer::FlowError::Eos);
+        }
         if buffers.len() == 1 {
             let (buffer, pad_name) = buffers.first().unwrap();
             let mut buffer = buffer.copy();
